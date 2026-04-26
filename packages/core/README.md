@@ -37,3 +37,13 @@ Render the panel in your app:
 pnpm install
 pnpm dev:example-react
 ```
+
+## First Release
+
+The package is currently versioned at `0.1.0`. For the first npm publish, publish that version directly:
+
+```bash
+pnpm --filter convex-inspect publish --access public
+```
+
+After the initial publish, use Changesets for subsequent releases.

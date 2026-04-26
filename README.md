@@ -22,6 +22,18 @@ pnpm dev:docs
 
 Changesets is configured for versioning and publishing.
 
+First public release:
+
+```bash
+pnpm install
+pnpm test
+pnpm typecheck
+pnpm build
+pnpm --filter convex-inspect publish --access public
+```
+
+After `0.1.0` is published, use Changesets for subsequent releases:
+
 ```bash
 pnpm changeset
 pnpm version-packages
