@@ -1,10 +1,15 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useAction as convexUseAction, useMutation as convexUseMutation, useQuery as convexUseQuery } from "convex/react";
 import type { FunctionReference, FunctionReturnType, OptionalRestArgs } from "convex/server";
+import { isDevEnvironment } from "./env.js";
 import { convexPanelBus, createEventId, getFnName } from "./index.js";
 
-function isDevMode() {
-  return typeof process === "undefined" || process.env.NODE_ENV !== "production";
+function serializeArgs(args: unknown) {
+  try {
+    return JSON.stringify(args ?? null);
+  } catch {
+    return "[unserializable]";
+  }
 }
 
 export function useQuery<Query extends FunctionReference<"query">>(
@@ -15,31 +20,31 @@ export function useQuery<Query extends FunctionReference<"query">>(
 
   const idRef = useRef(createEventId());
   const startedAtRef = useRef(Date.now());
-  const prevArgsKeyRef = useRef<string | undefined>(undefined);
+  const prevQueryKeyRef = useRef<string | undefined>(undefined);
 
   const name = getFnName(query);
-  const argsKey = query === "skip" ? "skip" : JSON.stringify(args[0] ?? null);
+  const queryKey = query === "skip" ? "skip" : `${name}:${serializeArgs(args[0])}`;
 
-  if (prevArgsKeyRef.current !== undefined && prevArgsKeyRef.current !== argsKey) {
+  if (prevQueryKeyRef.current !== undefined && prevQueryKeyRef.current !== queryKey) {
     idRef.current = createEventId();
     startedAtRef.current = Date.now();
   }
-  prevArgsKeyRef.current = argsKey;
+  prevQueryKeyRef.current = queryKey;
 
   const id = idRef.current;
   const startedAt = startedAtRef.current;
 
   useEffect(() => {
-    if (!isDevMode() || query === "skip") return;
+    if (!isDevEnvironment() || query === "skip") return;
     convexPanelBus.emit({ id, type: "query", name, args: args[0] ?? {}, status: "loading", startedAt });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [argsKey]);
+  }, [queryKey]);
 
   useEffect(() => {
-    if (!isDevMode() || result === undefined || query === "skip") return;
+    if (!isDevEnvironment() || result === undefined || query === "skip") return;
     convexPanelBus.emit({ id, type: "query", name, args: args[0] ?? {}, status: "success", result, startedAt, completedAt: Date.now() });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [result, id]);
+  }, [result, queryKey, id]);
 
   return result;
 }
@@ -50,7 +55,7 @@ export function useMutation<Mutation extends FunctionReference<"mutation">>(muta
 
   return useCallback(
     async (...args: OptionalRestArgs<Mutation>): Promise<FunctionReturnType<Mutation>> => {
-      if (!isDevMode()) return originalFn(...args);
+      if (!isDevEnvironment()) return originalFn(...args);
 
       const id = createEventId();
       const startedAt = Date.now();
@@ -74,7 +79,7 @@ export function useAction<Action extends FunctionReference<"action">>(action: Ac
 
   return useCallback(
     async (...args: OptionalRestArgs<Action>): Promise<FunctionReturnType<Action>> => {
-      if (!isDevMode()) return originalFn(...args);
+      if (!isDevEnvironment()) return originalFn(...args);
 
       const id = createEventId();
       const startedAt = Date.now();

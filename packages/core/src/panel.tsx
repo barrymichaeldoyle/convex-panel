@@ -101,6 +101,7 @@ const STATUS_COLORS: Record<string, string> = {
 
 export interface ConvexPanelProps {
   defaultOpen?: boolean;
+  enabled?: boolean;
 }
 
 function formatTime(ts: number): string {
@@ -110,6 +111,11 @@ function formatTime(ts: number): string {
   const ss = d.getSeconds().toString().padStart(2, "0");
   const ms = d.getMilliseconds().toString().padStart(3, "0");
   return `${hh}:${mm}:${ss}.${ms}`;
+}
+
+function formatDuration(ms: number): string {
+  if (ms < 1000) return `${ms}ms`;
+  return `${(ms / 1000).toFixed(1)}s`;
 }
 
 const LS_TIMESTAMPS = "convex-inspect:show-timestamps";
@@ -148,6 +154,7 @@ export function ConvexPanel({ defaultOpen = false }: ConvexPanelProps) {
   const [showFilters, setShowFilters] = useState(false);
   const [showTimestamps, setShowTimestamps] = useState(() => readPref(LS_TIMESTAMPS));
   const [showBadge, setShowBadge] = useState(() => readPref(LS_BADGE));
+  const [seenCount, setSeenCount] = useState(0);
   const listRef = useRef<HTMLDivElement>(null);
   const atBottomRef = useRef(true);
 
@@ -158,6 +165,7 @@ export function ConvexPanel({ defaultOpen = false }: ConvexPanelProps) {
 
   function handleClose() {
     setIsClosing(true);
+    setSeenCount(events.length);
     writePref(LS_OPEN, false);
     setTimeout(() => {
       setOpen(false);
@@ -195,9 +203,9 @@ export function ConvexPanel({ defaultOpen = false }: ConvexPanelProps) {
         aria-haspopup="dialog"
       >
         <ConvexSymbol size={30} />
-        {showBadge && events.length > 0 && (
+        {showBadge && events.length - seenCount > 0 && (
           <span
-            aria-label={`${events.length} events`}
+            aria-label={`${events.length - seenCount} new events`}
             style={{
               position: "absolute",
               top: -3,
@@ -218,7 +226,7 @@ export function ConvexPanel({ defaultOpen = false }: ConvexPanelProps) {
               justifyContent: "center",
             }}
           >
-            {events.length}
+            {events.length - seenCount}
           </span>
         )}
       </button>
@@ -247,7 +255,7 @@ export function ConvexPanel({ defaultOpen = false }: ConvexPanelProps) {
             Clear
           </button>
           <button
-            onClick={() => setShowSettings((value) => !value)}
+            onClick={() => { const next = !showSettings; setShowSettings(next); if (next) setShowFilters(false); }}
             style={{ ...styles.iconBtn, color: showSettings ? "#cdd6f4" : "#6c7086" }}
             className="convex-panel-btn convex-panel-icon-btn"
             aria-label="Toggle settings"
@@ -256,7 +264,7 @@ export function ConvexPanel({ defaultOpen = false }: ConvexPanelProps) {
             Settings
           </button>
           <button
-            onClick={() => setShowFilters((value) => !value)}
+            onClick={() => { const next = !showFilters; setShowFilters(next); if (next) setShowSettings(false); }}
             style={{ ...styles.iconBtn, color: showFilters || filter !== "all" ? "#cdd6f4" : "#6c7086", position: "relative" }}
             className="convex-panel-btn convex-panel-icon-btn"
             aria-label="Toggle filters"
@@ -428,7 +436,10 @@ function EventRow({ e, showTimestamps }: { e: ConvexEvent; showTimestamps: boole
       >
         <span style={{ ...styles.badge, background: COLORS[e.type].bg, color: COLORS[e.type].text }}>{e.type}</span>
         <span style={{ color: "#cdd6f4", fontWeight: 600 }}>{e.name}</span>
-        <span style={{ color: STATUS_COLORS[e.status], fontSize: 11 }}>{e.status}</span>
+        <span style={{ color: STATUS_COLORS[e.status], fontSize: 11, ...(e.status === "loading" ? { animation: "convex-panel-pulse 1.5s ease-in-out infinite" } : {}) }}>{e.status}</span>
+        {e.completedAt !== undefined && (
+          <span style={{ color: "#a6adc8", fontSize: 11 }}>{formatDuration(e.completedAt - e.startedAt)}</span>
+        )}
         {showTimestamps && <span style={{ color: "#6c7086", marginLeft: "auto" }}>{formatTime(e.completedAt ?? e.startedAt)}</span>}
       </div>
       <div style={{ ...styles.detailRegion, gridTemplateRows: open ? "1fr" : "0fr" }}>
@@ -449,7 +460,7 @@ function EventRow({ e, showTimestamps }: { e: ConvexEvent; showTimestamps: boole
 
 function JsonBlock({ label, value }: { label: string; value: unknown }) {
   const [copied, setCopied] = useState(false);
-  const formatted = JSON.stringify(value, null, 2);
+  const formatted = typeof value === "string" ? value : JSON.stringify(value, null, 2);
 
   async function handleCopy(event: ReactMouseEvent<HTMLButtonElement>) {
     try {

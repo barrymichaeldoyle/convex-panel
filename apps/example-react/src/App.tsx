@@ -1,4 +1,4 @@
-import { ConvexPanel, convexPanelBus, useQuery, useMutation, useAction } from "convex-inspect/react";
+import { ConvexPanel, convexPanelBus } from "convex-inspect/react";
 
 let idCounter = 0;
 function nextId() {

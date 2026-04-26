@@ -1,0 +1,39 @@
+---
+title: convex-inspect
+description: Dev-time panel for inspecting Convex queries, mutations, and actions without leaving your app.
+template: splash
+hero:
+  tagline: Inspect Convex queries, mutations, and actions without leaving your app.
+  actions:
+    - text: Get Started
+      link: /getting-started/
+      icon: right-arrow
+    - text: GitHub
+      link: https://github.com/barrymichaeldoyle/convex-inspect
+      icon: github
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+import { LiveDemo } from '../../components/LiveDemo.tsx';
+
+## Live Demo
+
+<LiveDemo client:load />
+
+## Features
+
+<CardGrid>
+  <Card title="Real-time event log" icon="list-format">
+    See every query, mutation, and action as it happens — with live status updates from loading through to success or error.
+  </Card>
+  <Card title="JSON inspector" icon="magnifier">
+    Expand any row to inspect args, return values, and error messages as formatted, copyable JSON.
+  </Card>
+  <Card title="Keyboard accessible" icon="laptop">
+    Navigate the event list, expand rows, and copy payloads entirely from the keyboard.
+  </Card>
+  <Card title="Dev-only by default" icon="approve-check-circle">
+    The `convex-inspect/react` entry point is a no-op in production — nothing ships to your users.
+  </Card>
+</CardGrid>

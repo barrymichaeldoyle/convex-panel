@@ -1,10 +1,8 @@
 import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
 import { fileURLToPath, URL } from "node:url";
 
 export default defineConfig(({ command }) => ({
   base: command === "build" ? "/convex-inspect/" : "/",
-  plugins: [react()],
   resolve: {
     alias: {
       "convex-inspect/react": fileURLToPath(new URL("../../packages/core/src/react.tsx", import.meta.url)),

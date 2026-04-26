@@ -1,17 +1,14 @@
 import { Suspense, lazy, type ComponentType } from "react";
+import { isDevEnvironment } from "./env.js";
 import type { ConvexPanelProps } from "./panel.js";
 
 const LazyPanel = lazy<ComponentType<ConvexPanelProps>>(async () => {
-  if (typeof process !== "undefined" && process.env.NODE_ENV === "production") {
-    return { default: (() => null) as ComponentType<ConvexPanelProps> };
-  }
-
   const mod = await import("./panel.js");
   return { default: mod.ConvexPanel as ComponentType<ConvexPanelProps> };
 });
 
 export function ConvexPanel(props: ConvexPanelProps) {
-  if (typeof process !== "undefined" && process.env.NODE_ENV === "production") {
+  if (!isDevEnvironment(props.enabled)) {
     return null;
   }
 
@@ -24,4 +21,5 @@ export function ConvexPanel(props: ConvexPanelProps) {
 
 export { useAction, useMutation, useQuery } from "./react-hooks.js";
 export { convexPanelBus } from "./index.js";
+export { resetConvexInspectEnabled, setConvexInspectEnabled } from "./env.js";
 export type { ConvexPanelProps } from "./panel.js";

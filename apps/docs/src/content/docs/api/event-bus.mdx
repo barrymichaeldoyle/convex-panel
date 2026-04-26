@@ -1,0 +1,144 @@
+---
+title: Event Bus
+description: Manually emit events to the panel using convexPanelBus.
+---
+
+`convexPanelBus` is the singleton event store that powers the panel. You can emit to it directly for any Convex calls that don't go through the instrumented hooks — for example when using `ConvexHttpClient`, `useConvexMutation`, or a custom wrapper.
+
+## Import
+
+```ts
+import { convexPanelBus } from 'convex-inspect/react';
+// or from the core package:
+import { convexPanelBus } from 'convex-inspect';
+```
+
+---
+
+## `convexPanelBus.emit(event)`
+
+Adds or updates an event in the log. If an event with the same `id` already exists it is updated in-place (used to transition `loading → success/error`).
+
+The bus retains the last 200 events.
+
+```ts
+convexPanelBus.emit(event: ConvexEvent): void
+```
+
+**Emit a two-phase event (loading → result):**
+
+```ts
+const id = crypto.randomUUID();
+const startedAt = Date.now();
+
+// Phase 1 — optimistic loading state
+convexPanelBus.emit({
+  id,
+  type: 'mutation',
+  name: 'tasks:add',
+  args: { text: 'Buy milk' },
+  status: 'loading',
+  startedAt,
+});
+
+try {
+  const result = await client.mutation(api.tasks.add, { text: 'Buy milk' });
+
+  // Phase 2a — success
+  convexPanelBus.emit({
+    id,
+    type: 'mutation',
+    name: 'tasks:add',
+    args: { text: 'Buy milk' },
+    status: 'success',
+    result,
+    startedAt,
+    completedAt: Date.now(),
+  });
+} catch (err) {
+  // Phase 2b — error
+  convexPanelBus.emit({
+    id,
+    type: 'mutation',
+    name: 'tasks:add',
+    args: { text: 'Buy milk' },
+    status: 'error',
+    error: String(err),
+    startedAt,
+    completedAt: Date.now(),
+  });
+}
+```
+
+---
+
+## `convexPanelBus.subscribe(listener)`
+
+Subscribes to event updates. The listener is called immediately with the current event list, then on every subsequent change. Returns an unsubscribe function.
+
+```ts
+convexPanelBus.subscribe(listener: (events: ConvexEvent[]) => void): () => void
+```
+
+```ts
+const unsubscribe = convexPanelBus.subscribe((events) => {
+  console.log('Current events:', events);
+});
+
+// later
+unsubscribe();
+```
+
+---
+
+## `convexPanelBus.clear()`
+
+Removes all events from the log and notifies subscribers.
+
+```ts
+convexPanelBus.clear(): void
+```
+
+---
+
+## `convexPanelBus.getEvents()`
+
+Returns the current event list without subscribing.
+
+```ts
+convexPanelBus.getEvents(): ConvexEvent[]
+```
+
+---
+
+## Types
+
+### `ConvexEvent`
+
+```ts
+interface ConvexEvent {
+  id: string;
+  type: 'query' | 'mutation' | 'action';
+  name: string;
+  args: unknown;
+  status: 'loading' | 'success' | 'error';
+  result?: unknown;
+  error?: string;
+  startedAt: number;    // Date.now() when the call was initiated
+  completedAt?: number; // Date.now() when the call settled
+}
+```
+
+### `createConvexDevClient`
+
+A proxy helper that wraps a `ConvexClient` instance and automatically instruments `.mutation()` and `.action()` calls:
+
+```ts
+import { createConvexDevClient } from 'convex-inspect';
+import { ConvexClient } from 'convex/browser';
+
+const client = createConvexDevClient(new ConvexClient(CONVEX_URL));
+
+// mutations and actions are now tracked automatically
+await client.mutation(api.tasks.add, { text: 'Buy milk' });
+```

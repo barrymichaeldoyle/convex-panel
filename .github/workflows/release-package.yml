@@ -30,7 +30,7 @@ jobs:
       - run: pnpm build
       - uses: changesets/action@v1
         with:
-          version: pnpm version-packages
+          version: pnpm changeset:version
           publish: pnpm release
           commit: "Version packages"
           title: "Version Packages"

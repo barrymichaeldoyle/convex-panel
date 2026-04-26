@@ -1,3 +1,6 @@
+import { isDevEnvironment } from "./env.js";
+export { resetConvexInspectEnabled, setConvexInspectEnabled } from "./env.js";
+
 export type ConvexEventType = "query" | "mutation" | "action";
 export type ConvexEventStatus = "loading" | "success" | "error";
 
@@ -65,6 +68,10 @@ export function createConvexDevClient<T extends object>(client: T): T {
       if ((prop === "mutation" || prop === "action") && typeof val === "function") {
         const type = prop as "mutation" | "action";
         return (ref: unknown, args: unknown) => {
+          if (!isDevEnvironment()) {
+            return (val as Function).call(target, ref, args);
+          }
+
           const id = createEventId();
           const name = getFnName(ref);
           const startedAt = Date.now();

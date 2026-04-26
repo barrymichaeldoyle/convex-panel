@@ -1,0 +1,83 @@
+---
+title: Getting Started
+description: Install convex-inspect and add it to your Convex app in minutes.
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+
+## Installation
+
+<Tabs>
+  <TabItem label="pnpm">
+    ```bash
+    pnpm add convex-inspect
+    ```
+  </TabItem>
+  <TabItem label="npm">
+    ```bash
+    npm install convex-inspect
+    ```
+  </TabItem>
+  <TabItem label="yarn">
+    ```bash
+    yarn add convex-inspect
+    ```
+  </TabItem>
+</Tabs>
+
+## Add the panel
+
+Render `<ConvexPanel />` anywhere in your app — typically near the root so it's always available:
+
+```tsx
+import { ConvexPanel } from 'convex-inspect/react';
+
+export default function App() {
+  return (
+    <>
+      {/* your app */}
+      <ConvexPanel />
+    </>
+  );
+}
+```
+
+The panel appears as a floating button in the bottom-right corner of the page. Click it to open the event log.
+
+<Aside type="tip">
+  `ConvexPanel` renders nothing in production. You can leave it in your app permanently and it will be stripped at build time.
+</Aside>
+
+## Track events
+
+There are two ways to feed events into the panel: **drop-in hooks** or the **event bus**.
+
+### Option 1 — Drop-in hooks (recommended)
+
+Replace your existing `convex/react` imports with the wrapped versions from `convex-inspect/react`. They're identical in usage and automatically instrument every call:
+
+```tsx
+import { useQuery, useMutation, useAction } from 'convex-inspect/react';
+
+// useQuery, useMutation, and useAction work exactly like the originals
+const tasks = useQuery(api.tasks.list);
+const addTask = useMutation(api.tasks.add);
+const sendEmail = useAction(api.email.send);
+```
+
+### Option 2 — Manual bus
+
+If you use `ConvexHttpClient`, a custom provider, or want fine-grained control, emit events directly via `convexPanelBus`:
+
+```ts
+import { convexPanelBus } from 'convex-inspect/react';
+
+const id = crypto.randomUUID();
+const startedAt = Date.now();
+
+// Emit the loading state
+convexPanelBus.emit({ id, type: 'mutation', name: 'tasks:add', args: { text: 'Buy milk' }, status: 'loading', startedAt });
+
+// Emit the result
+convexPanelBus.emit({ id, type: 'mutation', name: 'tasks:add', args: { text: 'Buy milk' }, status: 'success', result: { ok: true }, startedAt, completedAt: Date.now() });
+```

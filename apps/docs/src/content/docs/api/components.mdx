@@ -1,0 +1,75 @@
+---
+title: ConvexPanel
+description: Props and behaviour of the ConvexPanel component.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+## Import
+
+```ts
+import { ConvexPanel } from 'convex-inspect/react';
+```
+
+## Usage
+
+```tsx
+<ConvexPanel />
+```
+
+Renders a floating action button fixed to the bottom-right corner of the viewport. Clicking it opens the event log panel. The panel is dismissible and its open/closed state is persisted in `localStorage`.
+
+<Aside type="note">
+  `ConvexPanel` is a no-op in production (`process.env.NODE_ENV === 'production'`). It renders `null` without logging any warnings.
+</Aside>
+
+## Props
+
+### `defaultOpen`
+
+| Property | Type | Default |
+| --- | --- | --- |
+| `defaultOpen` | `boolean` | `false` |
+
+Sets the initial open state of the panel. Once the user opens or closes the panel manually, their preference is saved to `localStorage` and takes precedence over this prop.
+
+```tsx
+<ConvexPanel defaultOpen={true} />
+```
+
+## Panel controls
+
+Once open, the panel exposes these controls in its header:
+
+| Control | Description |
+| --- | --- |
+| **Clear** | Removes all events from the log |
+| **Settings** | Toggles a settings drawer with per-user preferences |
+| **Filter** | Filters the log to show only queries, mutations, or actions |
+| **✕** | Closes the panel |
+
+### Settings
+
+| Setting | Default | Description |
+| --- | --- | --- |
+| Show timestamps | On | Displays the completion time for each event |
+| Show count badge | On | Shows an event count badge on the FAB |
+
+All settings are persisted per-origin in `localStorage`.
+
+## Event rows
+
+Each row in the log shows:
+
+- **Type badge** — `query`, `mutation`, or `action`, colour-coded
+- **Function name** — e.g. `tasks:list`
+- **Status** — `loading`, `success`, or `error`
+- **Timestamp** — optional, shows the completion time
+
+Click or press `Enter`/`Space` on a row to expand it and inspect:
+
+- **Args** — the arguments passed to the function
+- **Result** — the return value (on success)
+- **Error** — the error message (on error)
+
+All JSON blocks have a **Copy** button that appears on hover.

@@ -1,7 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { convexPanelBus, createConvexDevClient } from "./index.js";
 
 beforeEach(() => convexPanelBus.clear());
+afterEach(() => {
+  delete globalThis.__CONVEX_INSPECT_DEV__;
+});
 
 describe("convexPanelBus", () => {
   it("notifies subscriber immediately with current events", () => {
@@ -84,6 +87,20 @@ describe("createConvexDevClient", () => {
     const events = convexPanelBus.getEvents();
     expect(events.at(-1)!.status).toBe("error");
     expect(events.at(-1)!.error).toContain("boom");
+  });
+
+  it("does not emit events when devtools are disabled", async () => {
+    globalThis.__CONVEX_INSPECT_DEV__ = false;
+
+    const fakeClient = {
+      mutation: vi.fn().mockResolvedValue({ ok: true }),
+    };
+    const dev = createConvexDevClient(fakeClient);
+
+    await (dev as typeof fakeClient).mutation({ _name: "tasks:add" }, { text: "hi" });
+
+    expect(fakeClient.mutation).toHaveBeenCalledTimes(1);
+    expect(convexPanelBus.getEvents()).toHaveLength(0);
   });
 
   it("passes through non-intercepted properties", () => {

@@ -1,0 +1,7 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "ignoreFiles": [
+    "apps/docs/.astro/**",
+    "apps/docs/src/components/ThemeProvider.astro"
+  ]
+}

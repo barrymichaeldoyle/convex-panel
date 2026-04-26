@@ -1,0 +1,81 @@
+---
+title: Hooks
+description: Drop-in replacements for Convex's useQuery, useMutation, and useAction that automatically instrument your calls.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+The hooks exported from `convex-inspect/react` are drop-in replacements for the ones in `convex/react`. They have identical signatures and automatically send events to `convexPanelBus` so they appear in the panel.
+
+All instrumentation is stripped in production — the hooks delegate directly to the originals without any overhead.
+
+## Import
+
+```ts
+import { useQuery, useMutation, useAction } from 'convex-inspect/react';
+```
+
+---
+
+## `useQuery`
+
+```ts
+function useQuery<Query extends FunctionReference<'query'>>(
+  query: Query | 'skip',
+  ...args: OptionalRestArgs<Query>
+): FunctionReturnType<Query> | undefined
+```
+
+Wraps `useQuery` from `convex/react`. Emits a `loading` event when the query subscribes or its args change, and a `success` event when the result resolves.
+
+```tsx
+const tasks = useQuery(api.tasks.list);
+const task = useQuery(api.tasks.getById, { id: taskId });
+
+// Conditional query — pass 'skip' to suppress the call
+const task = useQuery(taskId ? api.tasks.getById : 'skip', { id: taskId });
+```
+
+<Aside type="note">
+  Query events in the panel update in-place — the same row transitions from `loading` to `success` rather than adding a new row.
+</Aside>
+
+---
+
+## `useMutation`
+
+```ts
+function useMutation<Mutation extends FunctionReference<'mutation'>>(
+  mutation: Mutation,
+): (...args: OptionalRestArgs<Mutation>) => Promise<FunctionReturnType<Mutation>>
+```
+
+Wraps `useMutation` from `convex/react`. Emits a `loading` event when the mutation is called, and a `success` or `error` event when it settles. Errors are re-thrown so your existing error handling is unaffected.
+
+```tsx
+const addTask = useMutation(api.tasks.add);
+
+async function handleSubmit() {
+  await addTask({ text: 'Buy milk' });
+}
+```
+
+---
+
+## `useAction`
+
+```ts
+function useAction<Action extends FunctionReference<'action'>>(
+  action: Action,
+): (...args: OptionalRestArgs<Action>) => Promise<FunctionReturnType<Action>>
+```
+
+Wraps `useAction` from `convex/react`. Emits a `loading` event when the action is called, and a `success` or `error` event when it settles. Errors are re-thrown.
+
+```tsx
+const sendEmail = useAction(api.email.send);
+
+async function handleSend() {
+  await sendEmail({ to: 'user@example.com' });
+}
+```

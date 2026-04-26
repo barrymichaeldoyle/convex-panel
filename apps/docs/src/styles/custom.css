@@ -1,0 +1,21 @@
+/* Force dark mode — override light theme variables to always show dark */
+:root[data-theme='light'] {
+  --sl-color-white: var(--sl-color-gray-1);
+  --sl-color-gray-1: #cdd6f4;
+  --sl-color-gray-2: #bac2de;
+  --sl-color-gray-3: #a6adc8;
+  --sl-color-gray-4: #7f849c;
+  --sl-color-gray-5: #45475a;
+  --sl-color-gray-6: #313244;
+  --sl-color-gray-7: #1e1e2e;
+  --sl-color-black: #11111b;
+  --sl-color-bg: #1e1e2e;
+  --sl-color-bg-nav: #181825;
+  --sl-color-bg-sidebar: #181825;
+  --sl-color-text: #cdd6f4;
+  --sl-color-text-accent: #89b4fa;
+  --sl-color-hairline: #313244;
+  --sl-color-hairline-light: #45475a;
+  --sl-color-hairline-shade: #27273a;
+  color-scheme: dark;
+}

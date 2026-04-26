@@ -32,7 +32,7 @@ Local/manual flow if needed:
 pnpm test
 pnpm typecheck
 pnpm build
-pnpm version-packages
+pnpm changeset:version
 pnpm release
 ```
 
