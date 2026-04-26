@@ -28,7 +28,7 @@ jobs:
           cache: pnpm
       - uses: actions/configure-pages@v5
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @convex-panel/docs build
+      - run: pnpm --filter @convex-inspect/docs build
       - uses: actions/upload-pages-artifact@v3
         with:
           path: apps/docs/dist
