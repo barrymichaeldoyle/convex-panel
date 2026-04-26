@@ -44,6 +44,49 @@ a {
   padding: 56px 0 120px;
 }
 
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+  padding: 0 6px;
+}
+
+.site-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.site-mark {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--yellow), var(--rose) 48%, var(--violet));
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.06);
+}
+
+.site-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.site-nav a {
+  color: var(--muted);
+  font-size: 12px;
+  text-decoration: none;
+}
+
+.site-nav a:hover {
+  color: var(--text);
+}
+
 .hero {
   display: grid;
   grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.9fr);
@@ -64,6 +107,31 @@ a {
 
 .hero-copy {
   padding: 32px;
+}
+
+.hero-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 18px;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(237, 240, 255, 0.1);
+  background: rgba(13, 13, 21, 0.42);
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.hero-badge-strong {
+  border-color: rgba(243, 176, 28, 0.22);
+  color: #f7d98e;
+  background: rgba(243, 176, 28, 0.08);
 }
 
 .eyebrow {
@@ -240,6 +308,11 @@ a {
 }
 
 @media (max-width: 920px) {
+  .site-header {
+    padding: 0;
+    margin-bottom: 14px;
+  }
+
   .hero,
   .info-grid,
   .feature-strip {

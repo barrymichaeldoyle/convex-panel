@@ -46,9 +46,26 @@ export function App() {
   return (
     <>
       <main className="page-shell">
+        <header className="site-header">
+          <div className="site-brand">
+            <span className="site-mark" aria-hidden="true" />
+            <span>convex-inspect</span>
+          </div>
+          <nav className="site-nav" aria-label="Project links">
+            <a href="https://github.com/barrymichaeldoyle/convex-inspect" target="_blank" rel="noreferrer">GitHub</a>
+            <a href="#install">Install</a>
+            <a href="#features">Features</a>
+          </nav>
+        </header>
+
         <section className="hero">
           <div className="hero-copy">
             <p className="eyebrow">Convex Devtools</p>
+            <div className="hero-badges" aria-label="Package status">
+              <span className="hero-badge hero-badge-strong">npm: `convex-inspect`</span>
+              <span className="hero-badge">version: `0.1.0`</span>
+              <span className="hero-badge">dev-only React entry</span>
+            </div>
             <h1>Inspect queries, mutations, and actions without leaving your app.</h1>
             <p className="lede">
               `convex-inspect` gives you a compact in-app event log with keyboard-accessible rows, JSON inspection, and quick copy
@@ -73,7 +90,7 @@ export function App() {
           </div>
         </section>
 
-        <section className="info-grid">
+        <section className="info-grid" id="install">
           <article className="info-card">
             <h2>Install</h2>
             <CodeBlock code={codeInstall} />
@@ -88,7 +105,7 @@ export function App() {
           </article>
         </section>
 
-        <section className="feature-strip">
+        <section className="feature-strip" id="features">
           <div>
             <h3>Built for day-to-day debugging</h3>
             <p>Track query, mutation, and action lifecycles with minimal setup and a dev-only default React entrypoint.</p>
