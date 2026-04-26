@@ -35,8 +35,8 @@
   },
   "files": ["dist", "react", "README.md", "LICENSE"],
   "scripts": {
-    "build": "tsup src/index.ts src/react.tsx src/react-lazy.tsx --dts --format esm,cjs",
-    "dev": "tsup src/index.ts src/react.tsx src/react-lazy.tsx --dts --format esm,cjs --watch",
+    "build": "tsup src/index.ts src/react.tsx src/react-lazy.tsx --dts --format esm,cjs --clean",
+    "dev": "tsup src/index.ts src/react.tsx src/react-lazy.tsx --dts --format esm,cjs --watch --clean",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
