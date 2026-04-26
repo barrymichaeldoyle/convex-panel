@@ -2,7 +2,8 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { fileURLToPath, URL } from "node:url";
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
+  base: command === "build" ? "/convex-panel/" : "/",
   plugins: [react()],
   resolve: {
     alias: {
@@ -10,4 +11,4 @@ export default defineConfig({
       "convex-panel$": fileURLToPath(new URL("../../packages/core/src/index.ts", import.meta.url)),
     },
   },
-});
+}));

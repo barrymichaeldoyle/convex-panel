@@ -8,6 +8,8 @@ Devtools panel for Convex during development.
 pnpm add convex-panel
 ```
 
+Docs: `https://barrymichaeldoyle.github.io/convex-panel/`
+
 ## React Usage
 
 ```tsx

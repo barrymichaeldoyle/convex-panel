@@ -7,6 +7,7 @@
     "build": "pnpm -r build",
     "changeset": "changeset",
     "changeset:status": "changeset status --verbose",
+    "dev:docs": "pnpm --filter @convex-panel/docs dev",
     "version-packages": "changeset version",
     "dev:example-react": "pnpm --filter @convex-panel/example-react dev",
     "fmt": "oxfmt .",
