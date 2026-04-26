@@ -9,6 +9,7 @@
       "convex-inspect": ["packages/core/src/index.ts"],
       "convex-inspect/react": ["packages/core/src/react.tsx"]
     },
+    "ignoreDeprecations": "6.0",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
