@@ -18,7 +18,14 @@ Use these defaults:
 - `minor`: new features, new exported APIs, meaningful capability expansions
 - `major`: breaking API changes, renamed exports, changed default runtime behavior requiring consumer changes
 
-Release flow:
+Automated flow:
+
+- add a changeset in the feature/fix PR
+- merge to `main`
+- the release workflow opens or updates a `Version Packages` PR
+- merge that PR to publish to npm automatically
+
+Local/manual flow if needed:
 
 ```bash
 pnpm test
