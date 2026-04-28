@@ -1,5 +1,15 @@
 # convex-inspect
 
+## 0.2.2
+
+### Patch Changes
+
+- Polish the `ConvexPanel` rendering so the UI feels stable and consistent.
+  - give the panel a fixed default height so it no longer shrinks when the first event is logged
+  - reserve scrollbar gutter and pin row line-height to integer pixels to avoid sub-pixel layout shifts as events stream in
+  - fade new event rows in so they don't pop or fight with the auto-scroll
+  - color the `query` / `mutation` / `action` filter buttons to match their event-type badges, including an active state that uses the type's tint and border
+
 ## 0.2.1
 
 ### Patch Changes

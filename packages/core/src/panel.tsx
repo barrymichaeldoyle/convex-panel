@@ -43,6 +43,10 @@ const PANEL_CSS = `
     from { opacity: 1; transform: translateY(0) scale(1); }
     to   { opacity: 0; transform: translateY(10px) scale(0.97); }
   }
+  @keyframes convex-panel-row-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
   .convex-panel-fab {
     transition: background 150ms ease, border-color 150ms ease, transform 150ms ease, box-shadow 150ms ease !important;
   }
@@ -70,6 +74,12 @@ const PANEL_CSS = `
   .convex-panel-icon-btn[data-active="true"]:hover {
     background: rgba(137, 180, 250, 0.18) !important;
   }
+  .convex-panel-filter-btn {
+    transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+  }
+  .convex-panel-filter-btn:hover[aria-selected="false"] {
+    border-color: currentColor !important;
+  }
   .convex-panel-row-summary {
     transition: background 150ms ease;
   }
@@ -79,6 +89,7 @@ const PANEL_CSS = `
   .convex-panel-log-row {
     overflow: hidden;
     transition: box-shadow 120ms ease, background 120ms ease;
+    animation: convex-panel-row-in 180ms ease-out;
   }
   .convex-panel-log-row:last-child {
     border-bottom: none !important;
@@ -371,29 +382,38 @@ export function ConvexPanel({ defaultOpen = false }: ConvexPanelProps) {
           <div style={{ display: "grid", gridTemplateRows: showFilters ? "1fr" : "0fr", transition: "grid-template-rows 200ms ease" }}>
             <div style={{ overflow: "hidden" }}>
               <div role="tablist" aria-label="Filter events" style={styles.filters}>
-                {(["all", "query", "mutation", "action"] as const).map((type) => (
-                  <button
-                    type="button"
-                    key={type}
-                    role="tab"
-                    aria-selected={filter === type}
-                    onClick={() => {
-                      setFilter(type);
-                      try {
-                        localStorage.setItem(LS_FILTER, type);
-                      } catch {}
-                    }}
-                    className="convex-panel-btn"
-                    tabIndex={showFilters ? undefined : -1}
-                    style={{
-                      ...styles.filterBtn,
-                      ...(filter === type ? styles.filterBtnActive : {}),
-                      ...(type !== "all" ? { color: COLORS[type].text } : {}),
-                    }}
-                  >
-                    {type}
-                  </button>
-                ))}
+                {(["all", "query", "mutation", "action"] as const).map((type) => {
+                  const isActive = filter === type;
+                  const typeColors = type !== "all" ? COLORS[type] : null;
+                  const filterStyle: CSSProperties = {
+                    ...styles.filterBtn,
+                    ...(typeColors ? { color: typeColors.text } : {}),
+                    ...(isActive
+                      ? typeColors
+                        ? { background: typeColors.bg, borderColor: typeColors.text, color: typeColors.text }
+                        : styles.filterBtnActive
+                      : {}),
+                  };
+                  return (
+                    <button
+                      type="button"
+                      key={type}
+                      role="tab"
+                      aria-selected={isActive}
+                      onClick={() => {
+                        setFilter(type);
+                        try {
+                          localStorage.setItem(LS_FILTER, type);
+                        } catch {}
+                      }}
+                      className="convex-panel-btn convex-panel-filter-btn"
+                      tabIndex={showFilters ? undefined : -1}
+                      style={filterStyle}
+                    >
+                      {type}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -588,6 +608,7 @@ const styles: Record<string, CSSProperties> = {
     right: 20,
     zIndex: 9999,
     width: 480,
+    height: 480,
     maxHeight: "70vh",
     display: "flex",
     flexDirection: "column",
@@ -662,7 +683,9 @@ const styles: Record<string, CSSProperties> = {
   },
   list: {
     overflowY: "auto",
+    scrollbarGutter: "stable",
     flex: 1,
+    minHeight: 0,
   },
   settings: {
     padding: "10px 14px",
@@ -676,6 +699,10 @@ const styles: Record<string, CSSProperties> = {
     padding: "24px 14px",
     color: "#6c7086",
     textAlign: "center",
+    height: "100%",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
   },
   row: {
     borderBottom: "1px solid #27273a",
@@ -686,6 +713,8 @@ const styles: Record<string, CSSProperties> = {
     gap: 8,
     cursor: "pointer",
     padding: "8px 14px",
+    lineHeight: "16px",
+    minHeight: 32,
   },
   detailWrap: {
     padding: "8px 14px 12px",
