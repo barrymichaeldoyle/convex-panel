@@ -80,10 +80,34 @@ describe("convexPanelBus", () => {
     expect(convexPanelBus.getEvents()).toHaveLength(2);
   });
 
+  it("groups when args are structurally equal but object keys were inserted in a different order", () => {
+    const base = { type: "mutation" as const, name: "tasks:add", status: "success" as const };
+    convexPanelBus.emit({ id: "a", ...base, args: { text: "hi", done: false }, result: { ok: true }, startedAt: 1, completedAt: 2 });
+    convexPanelBus.emit({ id: "b", ...base, args: { done: false, text: "hi" }, result: { ok: true }, startedAt: 3, completedAt: 4 });
+
+    const events = convexPanelBus.getEvents();
+    expect(events).toHaveLength(1);
+    expect(events[0].count).toBe(2);
+  });
+
   it("does not group while a call is still loading", () => {
     const base = { type: "mutation" as const, name: "tasks:add", args: { text: "hi" } };
     convexPanelBus.emit({ id: "a", ...base, status: "success", startedAt: 1, completedAt: 2 });
     convexPanelBus.emit({ id: "b", ...base, status: "loading", startedAt: 3 });
+    expect(convexPanelBus.getEvents()).toHaveLength(2);
+  });
+
+  it("does not group successful calls when the results differ", () => {
+    const base = { type: "query" as const, name: "tasks:list", args: { list: "all" }, status: "success" as const };
+    convexPanelBus.emit({ id: "a", ...base, result: ["a"], startedAt: 1, completedAt: 2 });
+    convexPanelBus.emit({ id: "b", ...base, result: ["b"], startedAt: 3, completedAt: 4 });
+    expect(convexPanelBus.getEvents()).toHaveLength(2);
+  });
+
+  it("does not group error calls when the messages differ", () => {
+    const base = { type: "mutation" as const, name: "tasks:add", args: { text: "hi" }, status: "error" as const };
+    convexPanelBus.emit({ id: "a", ...base, error: "permission denied", startedAt: 1, completedAt: 2 });
+    convexPanelBus.emit({ id: "b", ...base, error: "rate limited", startedAt: 3, completedAt: 4 });
     expect(convexPanelBus.getEvents()).toHaveLength(2);
   });
 });

@@ -21,13 +21,47 @@ export interface ConvexEvent {
 
 type Listener = (events: ConvexEvent[]) => void;
 
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (value === null || typeof value !== "object") return false;
+  const proto = Object.getPrototypeOf(value);
+  return proto === Object.prototype || proto === null;
+}
+
+function sameValue(a: unknown, b: unknown): boolean {
+  if (Object.is(a, b)) return true;
+
+  if (Array.isArray(a) && Array.isArray(b)) {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i += 1) {
+      if (!sameValue(a[i], b[i])) return false;
+    }
+    return true;
+  }
+
+  if (isPlainObject(a) && isPlainObject(b)) {
+    const aKeys = Object.keys(a).sort();
+    const bKeys = Object.keys(b).sort();
+    if (aKeys.length !== bKeys.length) return false;
+    for (let i = 0; i < aKeys.length; i += 1) {
+      const key = aKeys[i];
+      if (key !== bKeys[i]) return false;
+      if (!sameValue(a[key], b[key])) return false;
+    }
+    return true;
+  }
+
+  return false;
+}
+
 function sameLogicalCall(a: ConvexEvent, b: ConvexEvent): boolean {
   if (a.type !== b.type || a.name !== b.name || a.status !== b.status) return false;
-  try {
-    return JSON.stringify(a.args ?? null) === JSON.stringify(b.args ?? null);
-  } catch {
-    return false;
+  if (!sameValue(a.args ?? null, b.args ?? null)) return false;
+  if (a.status === "success") return sameValue(a.result ?? null, b.result ?? null);
+  if (a.status === "error") {
+    return a.error === b.error
+      && sameValue(a.errorData ?? null, b.errorData ?? null);
   }
+  return true;
 }
 
 class ConvexPanelBus {
