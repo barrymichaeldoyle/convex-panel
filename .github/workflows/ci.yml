@@ -18,4 +18,7 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Fallow informational check
+        run: pnpm fallow:check
+        continue-on-error: true
       - run: pnpm ci:check

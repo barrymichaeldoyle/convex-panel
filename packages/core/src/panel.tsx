@@ -1,4 +1,15 @@
-import { useEffect, useRef, useState, type ButtonHTMLAttributes, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent, type ReactNode, type RefObject } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ButtonHTMLAttributes,
+  type CSSProperties,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type MouseEvent as ReactMouseEvent,
+  type ReactNode,
+  type RefObject,
+  type UIEvent as ReactUIEvent,
+} from "react";
 import { createPortal } from "react-dom";
 import { convexPanelBus, type ConvexEvent, type ConvexEventType } from "./index.js";
 
@@ -138,10 +149,26 @@ const PANEL_CSS = `
 
 function ConvexSymbol({ size = 16 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 184 188" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
-      <path d="M108.092 130.021C126.258 128.003 143.385 118.323 152.815 102.167C148.349 142.128 104.653 167.385 68.9858 151.878C65.6992 150.453 62.8702 148.082 60.9288 145.034C52.9134 132.448 50.2786 116.433 54.0644 101.899C64.881 120.567 86.8748 132.01 108.092 130.021Z" fill="#F3B01C"/>
-      <path d="M53.4012 90.1735C46.0375 107.191 45.7186 127.114 54.7463 143.51C22.9759 119.608 23.3226 68.4578 54.358 44.7949C57.2286 42.6078 60.64 41.3097 64.2178 41.1121C78.9312 40.336 93.8804 46.0225 104.364 56.6193C83.0637 56.831 62.318 70.4756 53.4012 90.1735Z" fill="#8D2676"/>
-      <path d="M114.637 61.8552C103.89 46.8701 87.0686 36.6684 68.6387 36.358C104.264 20.1876 148.085 46.4045 152.856 85.1654C153.3 88.7635 152.717 92.4322 151.122 95.6775C144.466 109.195 132.124 119.679 117.702 123.559C128.269 103.96 126.965 80.0151 114.637 61.8552Z" fill="#EE342F"/>
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 184 188"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      style={{ flexShrink: 0 }}
+    >
+      <path
+        d="M108.092 130.021C126.258 128.003 143.385 118.323 152.815 102.167C148.349 142.128 104.653 167.385 68.9858 151.878C65.6992 150.453 62.8702 148.082 60.9288 145.034C52.9134 132.448 50.2786 116.433 54.0644 101.899C64.881 120.567 86.8748 132.01 108.092 130.021Z"
+        fill="#F3B01C"
+      />
+      <path
+        d="M53.4012 90.1735C46.0375 107.191 45.7186 127.114 54.7463 143.51C22.9759 119.608 23.3226 68.4578 54.358 44.7949C57.2286 42.6078 60.64 41.3097 64.2178 41.1121C78.9312 40.336 93.8804 46.0225 104.364 56.6193C83.0637 56.831 62.318 70.4756 53.4012 90.1735Z"
+        fill="#8D2676"
+      />
+      <path
+        d="M114.637 61.8552C103.89 46.8701 87.0686 36.6684 68.6387 36.358C104.264 20.1876 148.085 46.4045 152.856 85.1654C153.3 88.7635 152.717 92.4322 151.122 95.6775C144.466 109.195 132.124 119.679 117.702 123.559C128.269 103.96 126.965 80.0151 114.637 61.8552Z"
+        fill="#EE342F"
+      />
     </svg>
   );
 }
@@ -189,6 +216,7 @@ const LS_OPEN = "convex-inspect:open";
 const LS_FILTER = "convex-inspect:filter";
 const DETAIL_EXPAND_MS = 180;
 const DETAIL_EXPAND_TRANSITION = `grid-template-rows ${DETAIL_EXPAND_MS}ms ease`;
+const PANEL_ANIMATION_MS = 180;
 
 function readPref(key: string, defaultVal = true): boolean {
   try {
@@ -205,27 +233,27 @@ function writePref(key: string, val: boolean) {
   } catch {}
 }
 
-export function ConvexPanel({ defaultOpen = false }: ConvexPanelProps) {
+function readFilterPref(): ConvexEventType | "all" {
+  try {
+    const stored = localStorage.getItem(LS_FILTER);
+    return (stored as ConvexEventType | "all") ?? "all";
+  } catch {
+    return "all";
+  }
+}
+
+function writeFilterPref(filter: ConvexEventType | "all") {
+  try {
+    localStorage.setItem(LS_FILTER, filter);
+  } catch {}
+}
+
+function newEventCount(events: ConvexEvent[], seenCount: number): number {
+  return totalOccurrences(events) - seenCount;
+}
+
+function usePanelPortal(): HTMLElement | null {
   const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
-  const [open, setOpen] = useState(() => readPref(LS_OPEN, defaultOpen));
-  const [isClosing, setIsClosing] = useState(false);
-  const [events, setEvents] = useState<ConvexEvent[]>([]);
-  const [filter, setFilter] = useState<ConvexEventType | "all">(() => {
-    try {
-      const stored = localStorage.getItem(LS_FILTER);
-      return (stored as ConvexEventType | "all") ?? "all";
-    } catch {
-      return "all";
-    }
-  });
-  const [showSettings, setShowSettings] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
-  const [showTimestamps, setShowTimestamps] = useState(() => readPref(LS_TIMESTAMPS));
-  const [showBadge, setShowBadge] = useState(() => readPref(LS_BADGE));
-  const [seenCount, setSeenCount] = useState(0);
-  const [search, setSearch] = useState("");
-  const listRef = useRef<HTMLDivElement>(null);
-  const atBottomRef = useRef(true);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -245,6 +273,24 @@ export function ConvexPanel({ defaultOpen = false }: ConvexPanelProps) {
     };
   }, []);
 
+  return portalRoot;
+}
+
+export function ConvexPanel({ defaultOpen = false }: ConvexPanelProps) {
+  const portalRoot = usePanelPortal();
+  const [open, setOpen] = useState(() => readPref(LS_OPEN, defaultOpen));
+  const [isClosing, setIsClosing] = useState(false);
+  const [events, setEvents] = useState<ConvexEvent[]>([]);
+  const [filter, setFilter] = useState<ConvexEventType | "all">(readFilterPref);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [showTimestamps, setShowTimestamps] = useState(() => readPref(LS_TIMESTAMPS));
+  const [showBadge, setShowBadge] = useState(() => readPref(LS_BADGE));
+  const [seenCount, setSeenCount] = useState(0);
+  const [search, setSearch] = useState("");
+  const listRef = useRef<HTMLDivElement>(null);
+  const atBottomRef = useRef(true);
+
   function handleOpen() {
     setOpen(true);
     writePref(LS_OPEN, true);
@@ -257,7 +303,7 @@ export function ConvexPanel({ defaultOpen = false }: ConvexPanelProps) {
     setTimeout(() => {
       setOpen(false);
       setIsClosing(false);
-    }, 180);
+    }, PANEL_ANIMATION_MS);
   }
 
   useEffect(() => convexPanelBus.subscribe(setEvents), []);
@@ -285,217 +331,369 @@ export function ConvexPanel({ defaultOpen = false }: ConvexPanelProps) {
     writePref(LS_BADGE, val);
   }
 
+  function handleFilterChange(value: ConvexEventType | "all") {
+    setFilter(value);
+    writeFilterPref(value);
+  }
+
+  function handleListScroll(event: ReactUIEvent<HTMLDivElement>) {
+    const el = event.currentTarget;
+    atBottomRef.current = el.scrollTop + el.clientHeight >= el.scrollHeight - 8;
+  }
+
   if (!portalRoot) return null;
 
   return createPortal(
     <>
       <style>{PANEL_CSS}</style>
       {!open ? (
-        <button
-          type="button"
-          onClick={handleOpen}
-          style={styles.fab}
-          className="convex-panel-root convex-panel-fab"
-          aria-label="Open Convex Inspect"
-          aria-haspopup="dialog"
-        >
-          <ConvexSymbol size={30} />
-          {(() => {
-            const newCount = totalOccurrences(events) - seenCount;
-            if (!showBadge || newCount <= 0) return null;
-            return (
-              <span
-                aria-label={`${newCount} new events`}
-                style={{
-                  position: "absolute",
-                  top: -3,
-                  right: -3,
-                  background: "#89b4fa",
-                  color: "#1e1e2e",
-                  borderRadius: 10,
-                  fontSize: 9,
-                  fontWeight: 700,
-                  padding: "0 4px",
-                  minWidth: 16,
-                  height: 16,
-                  textAlign: "center",
-                  lineHeight: "16px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                {newCount}
-              </span>
-            );
-          })()}
-        </button>
+        <ClosedPanelButton
+          onOpen={handleOpen}
+          newCount={showBadge ? newEventCount(events, seenCount) : 0}
+        />
       ) : (
         <div
           role="dialog"
           aria-label="Convex Inspect"
           className="convex-panel-root"
-          style={{ ...styles.panel, animation: `${isClosing ? "convex-panel-out" : "convex-panel-in"} 180ms ease forwards` }}
+          style={{
+            ...styles.panel,
+            animation: `${isClosing ? "convex-panel-out" : "convex-panel-in"} ${PANEL_ANIMATION_MS}ms ease forwards`,
+          }}
         >
-          <div style={styles.header}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <ConvexSymbol size={20} />
-              <span style={styles.title}>Convex Inspect</span>
-            </div>
-            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-              <button
-                type="button"
-                onClick={() => convexPanelBus.clear()}
-                style={styles.iconBtn}
-                className="convex-panel-btn convex-panel-icon-btn"
-                aria-label="Clear events"
-              >
-                Clear
-              </button>
-              <button
-                type="button"
-                onClick={() => { setShowSettings((value) => !value); }}
-                style={styles.iconBtn}
-                className="convex-panel-btn convex-panel-icon-btn"
-                data-active={showSettings ? "true" : "false"}
-                aria-label="Toggle settings"
-                aria-expanded={showSettings}
-              >
-                Settings
-              </button>
-              <button
-                type="button"
-                onClick={() => { setShowFilters((value) => !value); }}
-                style={styles.iconBtn}
-                className="convex-panel-btn convex-panel-icon-btn"
-                data-active={showFilters || filter !== "all" ? "true" : "false"}
-                aria-label="Toggle filters"
-                aria-expanded={showFilters}
-              >
-                Filter
-                {activeFilterColor && (
-                  <span
-                    aria-label={`Filtering ${filter} events`}
-                    style={{
-                      ...styles.filterIndicator,
-                      background: activeFilterColor,
-                      boxShadow: `0 0 0 2px ${styles.header.background as string}`,
-                    }}
-                  />
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={handleClose}
-                style={styles.iconBtn}
-                className="convex-panel-btn convex-panel-icon-btn"
-                aria-label="Close Convex Inspect"
-              >
-                ✕
-              </button>
-            </div>
-          </div>
-
-          <div style={{ display: "grid", gridTemplateRows: showSettings ? "1fr" : "0fr", transition: "grid-template-rows 200ms ease" }}>
-            <div style={{ overflow: "hidden" }}>
-              <div style={styles.settings} role="group" aria-label="Panel settings">
-                <SettingRow label="Show timestamps">
-                  <Toggle checked={showTimestamps} onChange={toggleTimestamps} aria-label="Show timestamps" tabIndex={showSettings ? undefined : -1} />
-                </SettingRow>
-                <SettingRow label="Show count badge">
-                  <Toggle checked={showBadge} onChange={toggleBadge} aria-label="Show count badge" tabIndex={showSettings ? undefined : -1} />
-                </SettingRow>
-              </div>
-            </div>
-          </div>
-
-          <div style={{ display: "grid", gridTemplateRows: showFilters ? "1fr" : "0fr", transition: "grid-template-rows 200ms ease" }}>
-            <div style={{ overflow: "hidden" }}>
-              <div role="tablist" aria-label="Filter events" style={styles.filters}>
-                {(["all", "query", "mutation", "action"] as const).map((type) => {
-                  const isActive = filter === type;
-                  const typeColors = type !== "all" ? COLORS[type] : null;
-                  const filterStyle: CSSProperties = {
-                    ...styles.filterBtn,
-                    ...(typeColors ? { color: typeColors.text } : {}),
-                    ...(isActive
-                      ? typeColors
-                        ? { background: typeColors.bg, borderColor: typeColors.text, color: typeColors.text }
-                        : styles.filterBtnActive
-                      : {}),
-                  };
-                  return (
-                    <button
-                      type="button"
-                      key={type}
-                      role="tab"
-                      aria-selected={isActive}
-                      onClick={() => {
-                        setFilter(type);
-                        try {
-                          localStorage.setItem(LS_FILTER, type);
-                        } catch {}
-                      }}
-                      className="convex-panel-btn convex-panel-filter-btn"
-                      tabIndex={showFilters ? undefined : -1}
-                      style={filterStyle}
-                    >
-                      {type}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          <div style={styles.searchBar}>
-            <input
-              type="search"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name…"
-              aria-label="Search events by name"
-              style={styles.searchInput}
-              className="convex-panel-search-input"
-            />
-            {search && (
-              <button
-                type="button"
-                onClick={() => setSearch("")}
-                aria-label="Clear search"
-                className="convex-panel-btn convex-panel-icon-btn"
-                style={styles.searchClear}
-              >
-                ✕
-              </button>
-            )}
-          </div>
-
-          <div
-            ref={listRef}
-            role="log"
-            aria-label="Convex events"
-            aria-live="polite"
-            style={styles.list}
-            onScroll={(e) => {
-              const el = e.currentTarget;
-              atBottomRef.current = el.scrollTop + el.clientHeight >= el.scrollHeight - 8;
-            }}
-          >
-            {visible.length === 0 ? (
-              <div style={styles.empty}>
-                {events.length === 0
-                  ? "No events yet. Run a query or mutation."
-                  : "No events match your filters."}
-              </div>
-            ) : (
-              visible.map((event) => <EventRow key={event.id} e={event} showTimestamps={showTimestamps} listRef={listRef} />)
-            )}
-          </div>
+          <PanelHeader
+            filter={filter}
+            showSettings={showSettings}
+            showFilters={showFilters}
+            activeFilterColor={activeFilterColor}
+            onClear={() => convexPanelBus.clear()}
+            onToggleSettings={() => setShowSettings((value) => !value)}
+            onToggleFilters={() => setShowFilters((value) => !value)}
+            onClose={handleClose}
+          />
+          <SettingsPanel
+            open={showSettings}
+            showTimestamps={showTimestamps}
+            showBadge={showBadge}
+            onToggleTimestamps={toggleTimestamps}
+            onToggleBadge={toggleBadge}
+          />
+          <FilterPanel open={showFilters} filter={filter} onChange={handleFilterChange} />
+          <SearchBar search={search} onSearch={setSearch} />
+          <EventList
+            listRef={listRef}
+            visibleEvents={visible}
+            totalEvents={events.length}
+            showTimestamps={showTimestamps}
+            onScroll={handleListScroll}
+          />
         </div>
       )}
     </>,
     portalRoot,
+  );
+}
+
+function ClosedPanelButton({ onOpen, newCount }: { onOpen: () => void; newCount: number }) {
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      style={styles.fab}
+      className="convex-panel-root convex-panel-fab"
+      aria-label="Open Convex Inspect"
+      aria-haspopup="dialog"
+    >
+      <ConvexSymbol size={30} />
+      {newCount > 0 && <NewEventBadge count={newCount} />}
+    </button>
+  );
+}
+
+function NewEventBadge({ count }: { count: number }) {
+  return (
+    <span
+      aria-label={`${count} new events`}
+      style={{
+        position: "absolute",
+        top: -3,
+        right: -3,
+        background: "#89b4fa",
+        color: "#1e1e2e",
+        borderRadius: 10,
+        fontSize: 9,
+        fontWeight: 700,
+        padding: "0 4px",
+        minWidth: 16,
+        height: 16,
+        textAlign: "center",
+        lineHeight: "16px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      {count}
+    </span>
+  );
+}
+
+function PanelHeader({
+  filter,
+  showSettings,
+  showFilters,
+  activeFilterColor,
+  onClear,
+  onToggleSettings,
+  onToggleFilters,
+  onClose,
+}: {
+  filter: ConvexEventType | "all";
+  showSettings: boolean;
+  showFilters: boolean;
+  activeFilterColor: string | null;
+  onClear: () => void;
+  onToggleSettings: () => void;
+  onToggleFilters: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <div style={styles.header}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <ConvexSymbol size={20} />
+        <span style={styles.title}>Convex Inspect</span>
+      </div>
+      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        <button
+          type="button"
+          onClick={onClear}
+          style={styles.iconBtn}
+          className="convex-panel-btn convex-panel-icon-btn"
+          aria-label="Clear events"
+        >
+          Clear
+        </button>
+        <button
+          type="button"
+          onClick={onToggleSettings}
+          style={styles.iconBtn}
+          className="convex-panel-btn convex-panel-icon-btn"
+          data-active={showSettings ? "true" : "false"}
+          aria-label="Toggle settings"
+          aria-expanded={showSettings}
+        >
+          Settings
+        </button>
+        <button
+          type="button"
+          onClick={onToggleFilters}
+          style={styles.iconBtn}
+          className="convex-panel-btn convex-panel-icon-btn"
+          data-active={showFilters || filter !== "all" ? "true" : "false"}
+          aria-label="Toggle filters"
+          aria-expanded={showFilters}
+        >
+          Filter
+          {activeFilterColor && (
+            <span
+              aria-label={`Filtering ${filter} events`}
+              style={{
+                ...styles.filterIndicator,
+                background: activeFilterColor,
+                boxShadow: `0 0 0 2px ${styles.header.background as string}`,
+              }}
+            />
+          )}
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          style={styles.iconBtn}
+          className="convex-panel-btn convex-panel-icon-btn"
+          aria-label="Close Convex Inspect"
+        >
+          ✕
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function SettingsPanel({
+  open,
+  showTimestamps,
+  showBadge,
+  onToggleTimestamps,
+  onToggleBadge,
+}: {
+  open: boolean;
+  showTimestamps: boolean;
+  showBadge: boolean;
+  onToggleTimestamps: (value: boolean) => void;
+  onToggleBadge: (value: boolean) => void;
+}) {
+  return (
+    <CollapsiblePanel open={open}>
+      <div style={styles.settings} role="group" aria-label="Panel settings">
+        <SettingRow label="Show timestamps">
+          <Toggle
+            checked={showTimestamps}
+            onChange={onToggleTimestamps}
+            aria-label="Show timestamps"
+            tabIndex={open ? undefined : -1}
+          />
+        </SettingRow>
+        <SettingRow label="Show count badge">
+          <Toggle
+            checked={showBadge}
+            onChange={onToggleBadge}
+            aria-label="Show count badge"
+            tabIndex={open ? undefined : -1}
+          />
+        </SettingRow>
+      </div>
+    </CollapsiblePanel>
+  );
+}
+
+function FilterPanel({
+  open,
+  filter,
+  onChange,
+}: {
+  open: boolean;
+  filter: ConvexEventType | "all";
+  onChange: (value: ConvexEventType | "all") => void;
+}) {
+  return (
+    <CollapsiblePanel open={open}>
+      <div role="tablist" aria-label="Filter events" style={styles.filters}>
+        {(["all", "query", "mutation", "action"] as const).map((type) => (
+          <FilterButton
+            key={type}
+            type={type}
+            active={filter === type}
+            tabIndex={open ? undefined : -1}
+            onClick={() => onChange(type)}
+          />
+        ))}
+      </div>
+    </CollapsiblePanel>
+  );
+}
+
+function CollapsiblePanel({ open, children }: { open: boolean; children: ReactNode }) {
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateRows: open ? "1fr" : "0fr",
+        transition: "grid-template-rows 200ms ease",
+      }}
+    >
+      <div style={{ overflow: "hidden" }}>{children}</div>
+    </div>
+  );
+}
+
+function FilterButton({
+  type,
+  active,
+  tabIndex,
+  onClick,
+}: {
+  type: ConvexEventType | "all";
+  active: boolean;
+  tabIndex?: number;
+  onClick: () => void;
+}) {
+  const typeColors = type !== "all" ? COLORS[type] : null;
+  const filterStyle: CSSProperties = {
+    ...styles.filterBtn,
+    ...(typeColors ? { color: typeColors.text } : {}),
+    ...(active
+      ? typeColors
+        ? { background: typeColors.bg, borderColor: typeColors.text, color: typeColors.text }
+        : styles.filterBtnActive
+      : {}),
+  };
+
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={active}
+      onClick={onClick}
+      className="convex-panel-btn convex-panel-filter-btn"
+      tabIndex={tabIndex}
+      style={filterStyle}
+    >
+      {type}
+    </button>
+  );
+}
+
+function SearchBar({ search, onSearch }: { search: string; onSearch: (value: string) => void }) {
+  return (
+    <div style={styles.searchBar}>
+      <input
+        type="search"
+        value={search}
+        onChange={(e) => onSearch(e.target.value)}
+        placeholder="Search by name…"
+        aria-label="Search events by name"
+        style={styles.searchInput}
+        className="convex-panel-search-input"
+      />
+      {search && (
+        <button
+          type="button"
+          onClick={() => onSearch("")}
+          aria-label="Clear search"
+          className="convex-panel-btn convex-panel-icon-btn"
+          style={styles.searchClear}
+        >
+          ✕
+        </button>
+      )}
+    </div>
+  );
+}
+
+function EventList({
+  listRef,
+  visibleEvents,
+  totalEvents,
+  showTimestamps,
+  onScroll,
+}: {
+  listRef: RefObject<HTMLDivElement | null>;
+  visibleEvents: ConvexEvent[];
+  totalEvents: number;
+  showTimestamps: boolean;
+  onScroll: (event: ReactUIEvent<HTMLDivElement>) => void;
+}) {
+  return (
+    <div
+      ref={listRef}
+      role="log"
+      aria-label="Convex events"
+      aria-live="polite"
+      style={styles.list}
+      onScroll={onScroll}
+    >
+      {visibleEvents.length === 0 ? (
+        <div style={styles.empty}>
+          {totalEvents === 0
+            ? "No events yet. Run a query or mutation."
+            : "No events match your filters."}
+        </div>
+      ) : (
+        visibleEvents.map((event) => (
+          <EventRow key={event.id} e={event} showTimestamps={showTimestamps} listRef={listRef} />
+        ))
+      )}
+    </div>
   );
 }
 
@@ -508,9 +706,14 @@ function SettingRow({ label, children }: { label: string; children: ReactNode })
   );
 }
 
-function Toggle(
-  { checked, onChange, ...props }: { checked: boolean; onChange(v: boolean): void } & Omit<ButtonHTMLAttributes<HTMLButtonElement>, "onChange">,
-) {
+function Toggle({
+  checked,
+  onChange,
+  ...props
+}: { checked: boolean; onChange(v: boolean): void } & Omit<
+  ButtonHTMLAttributes<HTMLButtonElement>,
+  "onChange"
+>) {
   return (
     <button
       type="button"
@@ -624,25 +827,56 @@ function EventRow({
         aria-expanded={open}
         aria-controls={detailId}
       >
-        <span style={{ ...styles.badge, background: COLORS[e.type].bg, color: COLORS[e.type].text }}>{e.type}</span>
-        <span style={styles.rowName} title={e.name}>{e.name}</span>
-        <span style={{ color: STATUS_COLORS[e.status], fontSize: 11, ...(e.status === "loading" ? { animation: "convex-panel-pulse 1.5s ease-in-out infinite" } : {}) }}>{e.status}</span>
+        <span
+          style={{ ...styles.badge, background: COLORS[e.type].bg, color: COLORS[e.type].text }}
+        >
+          {e.type}
+        </span>
+        <span style={styles.rowName} title={e.name}>
+          {e.name}
+        </span>
+        <span
+          style={{
+            color: STATUS_COLORS[e.status],
+            fontSize: 11,
+            ...(e.status === "loading"
+              ? { animation: "convex-panel-pulse 1.5s ease-in-out infinite" }
+              : {}),
+          }}
+        >
+          {e.status}
+        </span>
         {e.completedAt !== undefined && (
-          <span style={{ color: "#a6adc8", fontSize: 11 }}>{formatDuration(e.completedAt - e.startedAt)}</span>
+          <span style={{ color: "#a6adc8", fontSize: 11 }}>
+            {formatDuration(e.completedAt - e.startedAt)}
+          </span>
         )}
         {e.count && e.count > 1 && (
-          <span style={styles.countBadge} aria-label={`${e.count} occurrences`}>×{e.count}</span>
+          <span style={styles.countBadge} aria-label={`${e.count} occurrences`}>
+            ×{e.count}
+          </span>
         )}
-        {showTimestamps && <span style={{ color: "#6c7086", marginLeft: "auto" }}>{formatTime(e.completedAt ?? e.startedAt)}</span>}
+        {showTimestamps && (
+          <span style={{ color: "#6c7086", marginLeft: "auto" }}>
+            {formatTime(e.completedAt ?? e.startedAt)}
+          </span>
+        )}
       </div>
       <div style={{ ...styles.detailRegion, gridTemplateRows: open ? "1fr" : "0fr" }}>
         <div
           style={{ ...styles.detailRegionInner, visibility: open ? "visible" : "hidden" }}
           aria-hidden={!open}
         >
-          <div ref={detailWrapRef} id={detailId} style={styles.detailWrap} data-convex-panel-detail="true">
+          <div
+            ref={detailWrapRef}
+            id={detailId}
+            style={styles.detailWrap}
+            data-convex-panel-detail="true"
+          >
             <JsonBlock label="Args" value={e.args} />
-            {"result" in e && e.result !== undefined && <JsonBlock label="Result" value={e.result} />}
+            {"result" in e && e.result !== undefined && (
+              <JsonBlock label="Result" value={e.result} />
+            )}
             {e.status === "error" && e.error && (
               <ErrorBlock message={e.error} data={e.errorData} stack={e.errorStack} />
             )}
@@ -658,7 +892,9 @@ function ErrorBlock({ message, data, stack }: { message: string; data?: unknown;
   return (
     <div style={{ marginTop: 8 }}>
       <div style={styles.detailLabel}>Error</div>
-      <div style={styles.errorMessage} role="alert">{message}</div>
+      <div style={styles.errorMessage} role="alert">
+        {message}
+      </div>
       {data !== undefined && <JsonBlock label="Error data" value={data} />}
       {stack && (
         <div style={{ marginTop: 6 }}>

@@ -1,0 +1,27 @@
+{
+  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
+  "entry": [
+    "apps/docs/astro.config.mjs",
+    "apps/docs/src/content/**/*.mdx",
+    "apps/docs/src/content.config.ts",
+    "apps/docs/src/pages/**/*.astro",
+    "apps/example-react/src/main.tsx"
+  ],
+  "dynamicallyLoaded": [
+    "apps/docs/src/components/EmptyThemeSelect.astro",
+    "apps/docs/src/styles/custom.css"
+  ],
+  "duplicates": {
+    "mode": "mild",
+    "minTokens": 50,
+    "minLines": 5,
+    "threshold": 5,
+    "ignore": ["**/*.test.ts", "**/*.test.tsx"]
+  },
+  "health": {
+    "maxCyclomatic": 20,
+    "maxCognitive": 25,
+    "maxCrap": 60,
+    "ignore": ["**/*.test.ts", "**/*.test.tsx"]
+  }
+}

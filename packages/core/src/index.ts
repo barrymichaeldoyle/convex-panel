@@ -31,37 +31,54 @@ function sameValue(a: unknown, b: unknown): boolean {
   if (Object.is(a, b)) return true;
 
   if (Array.isArray(a) && Array.isArray(b)) {
-    if (a.length !== b.length) return false;
-    for (let i = 0; i < a.length; i += 1) {
-      if (!sameValue(a[i], b[i])) return false;
-    }
-    return true;
+    return sameArrayValues(a, b);
   }
 
   if (isPlainObject(a) && isPlainObject(b)) {
-    const aKeys = Object.keys(a).sort();
-    const bKeys = Object.keys(b).sort();
-    if (aKeys.length !== bKeys.length) return false;
-    for (let i = 0; i < aKeys.length; i += 1) {
-      const key = aKeys[i];
-      if (key !== bKeys[i]) return false;
-      if (!sameValue(a[key], b[key])) return false;
-    }
-    return true;
+    return sameObjectValues(a, b);
   }
 
   return false;
 }
 
+function sameArrayValues(a: unknown[], b: unknown[]): boolean {
+  if (a.length !== b.length) return false;
+  return a.every((value, index) => sameValue(value, b[index]));
+}
+
+function sameObjectValues(a: Record<string, unknown>, b: Record<string, unknown>): boolean {
+  const aKeys = Object.keys(a).sort();
+  const bKeys = Object.keys(b).sort();
+  if (!sameArrayValues(aKeys, bKeys)) return false;
+  return aKeys.every((key) => sameValue(a[key], b[key]));
+}
+
+function comparisonValue(value: unknown): unknown {
+  return value ?? null;
+}
+
+function sameEventSignature(a: ConvexEvent, b: ConvexEvent): boolean {
+  return (
+    a.type === b.type &&
+    a.name === b.name &&
+    a.status === b.status &&
+    sameValue(comparisonValue(a.args), comparisonValue(b.args))
+  );
+}
+
 function sameLogicalCall(a: ConvexEvent, b: ConvexEvent): boolean {
-  if (a.type !== b.type || a.name !== b.name || a.status !== b.status) return false;
-  if (!sameValue(a.args ?? null, b.args ?? null)) return false;
-  if (a.status === "success") return sameValue(a.result ?? null, b.result ?? null);
-  if (a.status === "error") {
-    return a.error === b.error
-      && sameValue(a.errorData ?? null, b.errorData ?? null);
+  if (!sameEventSignature(a, b)) return false;
+
+  switch (a.status) {
+    case "success":
+      return sameValue(comparisonValue(a.result), comparisonValue(b.result));
+    case "error":
+      return (
+        a.error === b.error && sameValue(comparisonValue(a.errorData), comparisonValue(b.errorData))
+      );
+    case "loading":
+      return true;
   }
-  return true;
 }
 
 function consolidate(events: ConvexEvent[]): ConvexEvent[] {
@@ -105,7 +122,9 @@ class ConvexPanelBus {
   subscribe(listener: Listener): () => void {
     this.listeners.add(listener);
     listener(this.events);
-    return () => { this.listeners.delete(listener); };
+    return () => {
+      this.listeners.delete(listener);
+    };
   }
 
   getEvents() {
@@ -126,7 +145,8 @@ export function createEventId() {
 }
 
 export function getFnName(ref: unknown): string {
-  if (ref && typeof ref === "object" && "_name" in ref) return String((ref as { _name: string })._name);
+  if (ref && typeof ref === "object" && "_name" in ref)
+    return String((ref as { _name: string })._name);
   if (typeof ref === "string") return ref;
   return "unknown";
 }
@@ -165,11 +185,31 @@ export function createConvexDevClient<T extends object>(client: T): T {
           const startedAt = Date.now();
           convexPanelBus.emit({ id, type, name, args, status: "loading", startedAt });
           const promise = (val as Function).call(target, ref, args) as Promise<unknown>;
-          promise.then((result) => {
-            convexPanelBus.emit({ id, type, name, args, status: "success", result, startedAt, completedAt: Date.now() });
-          }).catch((err: unknown) => {
-            convexPanelBus.emit({ id, type, name, args, status: "error", ...extractError(err), startedAt, completedAt: Date.now() });
-          });
+          promise
+            .then((result) => {
+              convexPanelBus.emit({
+                id,
+                type,
+                name,
+                args,
+                status: "success",
+                result,
+                startedAt,
+                completedAt: Date.now(),
+              });
+            })
+            .catch((err: unknown) => {
+              convexPanelBus.emit({
+                id,
+                type,
+                name,
+                args,
+                status: "error",
+                ...extractError(err),
+                startedAt,
+                completedAt: Date.now(),
+              });
+            });
           return promise;
         };
       }
