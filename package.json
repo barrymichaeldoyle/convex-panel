@@ -5,7 +5,7 @@
   "license": "MIT",
   "scripts": {
     "build": "pnpm -r build",
-    "ci:check": "pnpm lint && pnpm knip && pnpm test && pnpm typecheck && pnpm build",
+    "ci:check": "pnpm audit --audit-level low && pnpm lint && pnpm knip && pnpm test && pnpm typecheck && pnpm build",
     "changeset": "changeset",
     "changeset:status": "changeset status --verbose",
     "changeset:version": "changeset version",
@@ -30,15 +30,20 @@
     "@types/node": "25.6.0",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
-    "fallow": "^2.54.2",
-    "jsdom": "29.1.0",
-    "knip": "6.7.0",
-    "oxfmt": "0.47.0",
-    "oxlint": "1.62.0",
-    "patch-pulse": "4.1.0",
+    "fallow": "^2.64.0",
+    "jsdom": "29.1.1",
+    "knip": "6.11.0",
+    "oxfmt": "0.48.0",
+    "oxlint": "1.63.0",
+    "patch-pulse": "4.1.1",
     "react": "19.2.5",
     "react-dom": "19.2.5",
     "typescript": "6.0.3"
+  },
+  "pnpm": {
+    "overrides": {
+      "yaml": "2.8.3"
+    }
   },
   "packageManager": "pnpm@10.30.3"
 }

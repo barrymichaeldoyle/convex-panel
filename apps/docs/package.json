@@ -12,14 +12,14 @@
   "dependencies": {
     "@astrojs/react": "5.0.4",
     "@astrojs/starlight": "0.38.4",
-    "astro": "6.1.9",
-    "convex": "1.36.1",
+    "astro": "6.2.2",
+    "convex": "1.37.0",
     "convex-inspect": "workspace:*",
     "react": "19.2.5",
     "react-dom": "19.2.5"
   },
   "devDependencies": {
-    "@astrojs/check": "0.9.8",
+    "@astrojs/check": "0.9.9",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "typescript": "6.0.3"

@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "convex": "1.36.1",
+    "convex": "1.37.0",
     "convex-inspect": "workspace:*"
   },
   "devDependencies": {
